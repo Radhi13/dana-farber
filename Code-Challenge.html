@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+<script type="text/javascript" async="" src="https://www.google-analytics.com/plugins/ua/linkid.js"></script>
+<script async="" src="//www.google-analytics.com/analytics.js"></script>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<head>    
+<style>
+    body{
+        background-color: lightblue;   
+    }
+     table ,#myTable ,.header, tr ,th , td  {
+        width:70%;
+        border: 1px solid grey;
+        border-collapse: collapse;
+        text-align: center;
+        clear: left;
+    } 
+
+    #myInput {
+        width:200px;
+        border-radius: 50px;
+        border: 2px solid grey;
+        border-collapse: collapse;
+        border-color: blueviolet;
+        border-style: solid;
+        padding: 10px;
+        float: left;
+    }
+    
+    table .value  {
+        background-color: #f1f1f1;
+        padding: 10px;
+    }
+    table .header {
+        background-color: #00FFFF;
+        font-size: 20px; 
+        padding: 15px;
+    }
+    
+    #barchart_values{
+    float: right;
+    margin: 0 0 10px 10px;
+}
+</style>  
+   
+</head>   
+<body>   
+<div ng-app="myApp" ng-controller="elementCtrl1">  
+    
+
+<table>
+    <tr class="chart">
+        <td> <input type="text" id="myInput" onkeyup="mySearchEngine()" placeholder="Search for elements.." title="Type an element"></td>
+        <td> <div id="barchart_values" style="width: 700px; height: 300px;"></div> </td>
+    </tr>
+</table>
+    
+<table id="myTable">
+    <tr class="header">
+        <th>Alteration</th>
+        <th>HugoSymbol</th>
+        <th>Oncogene</th>
+        <th>EntrezGeneId</th>
+    </tr>
+    <tr class="value" ng-repeat="x in names">
+        <td>{{ x.alteration }}</td>
+        <td>{{ x.gene.hugoSymbol }}</td>
+        <td>{{ x.gene.oncogene | uppercase }}</td>
+        <td>{{ x.gene.entrezGeneId }}</td>    
+    </tr>
+</table>
+</div>
+
+
+    
+<script>
+    var count_missense_variant=0;
+    var count_NA=0;
+    var count_inframe_deletion=0; 
+    var count_stop_gained=0;
+    var count_frameshift_variant=0;
+    var count_stop_gained=0;
+    var count_inframe_insertion=0;
+    var length=0;    
+    
+// get the table generated
+var app = angular.module('myApp', []);
+app.controller('elementCtrl1', function($scope, $http) {
+    $http.get("http://oncokb.org/api/v1/genes/673/variants")
+    .then(function (response) {
+        $scope.names = response.data;
+        
+         var myObj = response.data;
+   
+        
+        length =  myObj.length;
+                
+            for(i = 0; i< length; i++){
+                
+                if(myObj[i].consequence.term=="NA"){
+                    count_NA=count_NA+1;
+                }
+                if(myObj[i].consequence.term=="missense_variant"){
+                    count_missense_variant=count_missense_variant+1;
+                }
+                if(myObj[i].consequence.term=="inframe_deletion"){
+                    count_inframe_deletion=count_inframe_deletion+1;
+                }
+                if(myObj[i].consequence.term=="stop_gained"){
+                    count_stop_gained=count_stop_gained+1;
+                }
+                if(myObj[i].consequence.term=="frameshift_variant"){
+                    count_frameshift_variant=count_frameshift_variant+1;
+                }
+                if(myObj[i].consequence.term=="inframe_insertion"){
+                    count_inframe_insertion=count_inframe_insertion+1;                                     
+                } 
+        
+            }
+        drawChart();
+        });
+     
+}); 
+
+    
+// get the search engine    
+function mySearchEngine() {
+  var input, filter, table, tr, td, i;
+  input = document.getElementById("myInput");
+  filter = input.value.toUpperCase();
+  table = document.getElementById("myTable");
+  tr = table.getElementsByTagName("tr");
+  for (i = 0; i < tr.length; i++) {
+    td = tr[i].getElementsByTagName("td")[0];
+    if (td) {
+      if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }       
+  }
+}    
+    
+    
+    
+google.charts.load("current", {packages:["corechart"]});
+    google.charts.setOnLoadCallback(drawChart);
+    function drawChart() {
+      var data = google.visualization.arrayToDataTable([
+         ['Element', 'Count', { role: 'style' }],
+         ['missense_variant', count_missense_variant, 'green'],            
+         ['N/A', count_NA, 'red'],                                        
+         ['inframe_deletion', count_inframe_deletion, 'blue'],
+         ['stop_gained', count_stop_gained, 'pink'],
+         ['frameshift_variant', count_frameshift_variant, 'cyan'],
+         ['inframe_insertion', count_inframe_insertion, 'purple']
+          
+      ]);
+
+
+     var view = new google.visualization.DataView(data);
+      view.setColumns([0, 1,
+                       { calc: "stringify",
+                         sourceColumn: 1,
+                         type: "string",
+                         role: "annotation" },
+                       2]);
+
+      var options = {
+        title: "Count of data elements",
+        width: 700,
+        height: 300,
+        bar: {groupWidth: "75%"},
+        legend: { position: "none" },
+      };
+      var chart = new google.visualization.ColumnChart  (document.getElementById("barchart_values"));
+      chart.draw(view, options);
+  }    
+</script>
+    
+
+
+</body>
+</html>
+
+
